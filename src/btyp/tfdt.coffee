@@ -1,40 +1,35 @@
-Long = require 'long'
+tools = require '../tools'
+BufferIterator = require '../bufferIterator'
 
 module.exports.decode = (buffer, offset) ->
-    data = {}
+    # create iterator
+    iterator = new BufferIterator buffer
 
-    # basic info
-    info = buffer.readUInt32BE 0
-    data.version = info >> 24
-    data.flags = info & 0x00FFFFFF
+    # basic extract
+    data = tools.initBoxData iterator
 
-    # 4 or 8 bytes
+    # switch by version
     if data.version is 1
-        data.baseMediaDecodeTime = Long.fromBits(buffer.readUInt32BE(8), buffer.readUInt32BE(4), true)
+        data.baseMediaDecodeTime = iterator.read64()
     else
-        data.baseMediaDecodeTime = buffer.readUInt32BE 4
+        data.baseMediaDecodeTime = iterator.read32()
 
     # return
     data
 
 module.exports.encode = (data) ->
     # determine length
-    length = 8
+    length = 4
     length += 4 if data.version is 1
 
-    # create buffer
-    buffer = new Buffer length
-
-    # info
-    info = (data.version << 24) + data.flags
-    buffer.writeUInt32BE info
+    # iterator
+    iterator = tools.writeBoxData data, length
 
     # 4 or 8 bytes
     if data.version is 1
-        buffer.writeUInt32BE data.baseMediaDecodeTime.getHighBitsUnsigned(), 4
-        buffer.writeUInt32BE data.baseMediaDecodeTime.getLowBitsUnsigned(), 8
+        iterator.write64 data.baseMediaDecodeTime
     else
-        buffer.writeUInt32BE 4, data.baseMediaDecodeTime
+        iterator.write32 data.baseMediaDecodeTime
 
     # return
-    buffer
+    iterator.buffer

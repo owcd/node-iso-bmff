@@ -1,20 +1,33 @@
 tools = require '../tools'
-
-# element properties
-properties =
-    'trackId':
-        'type': 'number'
-    'defaultSampleDescriptionIndex':
-        'type': 'number'
-    'defaultSampleDuration':
-        'type': 'number'
-    'defaultSampleSize':
-        'type': 'number'
-    'defaultSampleFlags':
-        'type': 'number'
+BufferIterator = require '../bufferIterator'
 
 module.exports.decode = (buffer, offset) ->
-    tools.readBoxProperties buffer, properties
+    # create iterator
+    iterator = new BufferIterator buffer
+
+    # basic extract
+    data = tools.initBoxData iterator
+
+    # read
+    data.trackId = iterator.read32()
+    data.defaultSampleDescriptionIndex = iterator.read32()
+    data.defaultSampleDuration = iterator.read32()
+    data.defaultSampleSize = iterator.read32()
+    data.defaultSampleFlags = iterator.read32()
+
+    # return
+    data
 
 module.exports.encode = (data) ->
-    tools.writeBoxProperties data, properties
+    # iterator
+    iterator = tools.writeBoxData data, 20
+
+    # write
+    iterator.write32 data.trackId
+    iterator.write32 data.defaultSampleDescriptionIndex
+    iterator.write32 data.defaultSampleDuration
+    iterator.write32 data.defaultSampleSize
+    iterator.write32 data.defaultSampleFlags
+
+    # return
+    iterator.buffer

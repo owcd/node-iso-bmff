@@ -1,17 +1,21 @@
-module.exports.decode = (buffer, offset) ->
-    # init
-    data = {}
+tools = require '../tools'
+BufferIterator = require '../bufferIterator'
 
-    # major brand
-    data.majorBrand = buffer.toString('utf8', 0, 4)
-    data.minorVersion = buffer.readInt32BE 4
+module.exports.decode = (buffer, offset) ->
+    # create iterator
+    iterator = new BufferIterator buffer
+
+    # basic extract
+    data = {} #tools.initBoxData iterator
+
+    # brand and version
+    data.majorBrand = iterator.readString 'utf8', 4
+    data.minorVersion = iterator.read32()
     data.compatibleBrands = []
 
     # extract compatible brands
-    cursor = 8
-    while cursor < buffer.length
-        data.compatibleBrands.push buffer.toString('utf8', cursor, cursor + 4)
-        cursor += 4
+    while iterator.hasMore()
+        data.compatibleBrands.push iterator.readString 'utf8', 4
 
     # return
     data
@@ -19,14 +23,17 @@ module.exports.decode = (buffer, offset) ->
 module.exports.encode = (data) ->
     # create buffer
     buffer = new Buffer 8 + data.compatibleBrands.length * 4
-    buffer.write data.majorBrand, 0, 4
-    buffer.writeInt32BE data.minorVersion, 4
 
-    # write compatible brands
-    cursor = 8
+    # iterator
+    iterator = new BufferIterator buffer
+
+    # brand and version
+    iterator.writeString data.majorBrand, 4
+    iterator.write32 data.minorVersion
+
+    # loop brands
     for brand in data.compatibleBrands
-        buffer.write brand, cursor, 4
-        cursor += 4
+        iterator.writeString brand, 4
 
     # return
-    buffer
+    iterator.buffer
